@@ -2,7 +2,7 @@ use crate::config::{Config, require};
 use std::process::Command;
 
 const CRED_HELPER: &str =
-    "!f() { echo username=$GITOPS_USERNAME; echo password=$GITOPS_APP_PASSWORD; }; f";
+    "!f() { echo username=x-token-auth; echo password=$GITOPS_ACCESS_TOKEN; }; f";
 
 fn cleanup(dir: &str) {
     let _ = std::fs::remove_dir_all(dir);
@@ -33,8 +33,7 @@ fn run(args: &[&str]) {
     }
 }
 pub fn update_manifest(cfg: &Config, env: &str) {
-    require("GITOPS_USERNAME");
-    require("GITOPS_APP_PASSWORD");
+    require("GITOPS_ACCESS_TOKEN");
     let target_env = match env {
         "test" => "staging",
         "production" => "prod",
@@ -80,8 +79,13 @@ pub fn update_manifest(cfg: &Config, env: &str) {
     std::fs::write(&values_file, updated_content.as_bytes()).expect("failed to update values file");
     std::env::set_current_dir(&manifest_path).expect("failed to change directory");
 
+    let bot_email = std::env::var("GITOPS_BOT_EMAIL")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .unwrap_or_else(|| "pvbpipelines@bitbucket.org".to_string());
+
     run(&["config", "user.name", "Providus Bitbucket CI Bot"]);
-    run(&["config", "user.email", "pvbpipelines@bitbucket.org"]);
+    run(&["config", "user.email", &bot_email]);
     run(&["add", "values.yaml"]);
 
     let unchanged = Command::new("git")

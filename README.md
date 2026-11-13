@@ -34,7 +34,7 @@ Set `ACTION` to one of these. Each action only needs its own secrets.
 | `build-and-push` | `APP_NAME`, `DOCKERHUB_USERNAME`, `DOCKER_PASSWORD` | `IMAGE_REPO` | `docker build --build-arg environment=production`, push `<app>-<build#>` and `<app>-tree-<hash>` |
 | `check-image` | `APP_NAME`, `DOCKERHUB_USERNAME`, `DOCKERHUB_READ_TOKEN` | `IMAGE_REPO` | Fails if no image was built from this exact source tree (PR check before prod) |
 | `promote` | `APP_NAME`, `DOCKERHUB_USERNAME`, `DOCKER_PASSWORD` | `IMAGE_REPO` | Pulls `<app>-tree-<hash>`, retags it as `<app>-<build#>`, pushes it. No rebuild |
-| `update-manifest` | `APP_NAME`, `DOCKERHUB_USERNAME`, `GITOPS_USERNAME`, `GITOPS_APP_PASSWORD` | `ENV` | Sets `tag:` in `environments/<env>/<app>/values.yaml` and pushes to `main` |
+| `update-manifest` | `APP_NAME`, `DOCKERHUB_USERNAME`, `GITOPS_ACCESS_TOKEN` | `ENV`, `GITOPS_BOT_EMAIL` | Sets `tag:` in `environments/<env>/<app>/values.yaml` and pushes to `main` |
 
 | Variable | Default | Notes |
 |---|---|---|
@@ -42,7 +42,8 @@ Set `ACTION` to one of these. Each action only needs its own secrets.
 | `DOCKERHUB_USERNAME` | none | Docker Hub namespace, normally `provdev`. |
 | `DOCKER_PASSWORD` | none | Secured. Push access. Comes from the deployment (Staging / Production). |
 | `DOCKERHUB_READ_TOKEN` | none | Secured repository variable. Read-only, so PR checks don't need push credentials. |
-| `GITOPS_USERNAME` / `GITOPS_APP_PASSWORD` | none | Secured. Write access to `gitops-central-repo`. Passed to git through a credential helper, never in the URL. |
+| `GITOPS_ACCESS_TOKEN` | none | Secured. Bitbucket access token with *Repositories: Write* on `gitops-central-repo` (a repository token on that repo is the narrowest choice). Sent as username `x-token-auth` through a credential helper, never in the URL. |
+| `GITOPS_BOT_EMAIL` | `pvbpipelines@bitbucket.org` | Commit email: the token's bot email (`…@bots.bitbucket.org`), so GitOps commits show as the bot. Changes when the token is replaced, so update it on every rotation. |
 | `IMAGE_REPO` | `appdev` | |
 | `ENV` | `test` | `test` → `environments/staging`, `production` → `environments/prod`, anything else used as-is. |
 
