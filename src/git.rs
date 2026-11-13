@@ -4,6 +4,10 @@ use std::process::Command;
 const CRED_HELPER: &str =
     "!f() { echo username=$GITOPS_USERNAME; echo password=$GITOPS_APP_PASSWORD; }; f";
 
+fn cleanup(dir: &str) {
+    let _ = std::fs::remove_dir_all(dir);
+}
+
 fn git(args: &[&str]) -> std::process::ExitStatus {
     Command::new("git")
         .args([
@@ -38,9 +42,16 @@ pub fn update_manifest(cfg: &Config, env: &str) {
     };
 
     println!("Cloning GitOps central repo..");
+    let clone_dir =
+        std::env::temp_dir().join(format!("gitops-central-repo-{}", std::process::id()));
+    let clone_dir = clone_dir
+        .to_str()
+        .expect("temp dir path is not UTF-8")
+        .to_string();
     let clone_status = git(&[
         "clone",
         "https://bitbucket.org/nndukwe/gitops-central-repo.git",
+        &clone_dir,
     ]);
 
     if !clone_status.success() {
@@ -48,10 +59,7 @@ pub fn update_manifest(cfg: &Config, env: &str) {
         std::process::exit(1);
     }
 
-    let manifest_path = format!(
-        "gitops-central-repo/environments/{}/{}",
-        target_env, cfg.app_name
-    );
+    let manifest_path = format!("{}/environments/{}/{}", clone_dir, target_env, cfg.app_name);
     println!(
         "Updating {} in {} to tag {}...",
         cfg.app_name, target_env, cfg.image_tag
@@ -86,6 +94,7 @@ pub fn update_manifest(cfg: &Config, env: &str) {
             "{} already at {} in {}; nothing to do.",
             cfg.app_name, cfg.image_tag, target_env
         );
+        cleanup(&clone_dir);
         return;
     }
 
@@ -110,5 +119,6 @@ pub fn update_manifest(cfg: &Config, env: &str) {
         std::process::exit(1);
     }
 
+    cleanup(&clone_dir);
     println!("Successfully updated GitOps central repo.");
 }
