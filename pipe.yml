@@ -2,7 +2,7 @@
 # to find the image to run. Variables and usage are documented in README.md.
 name: Build Ops Pipe
 # Set to the released build when cutting a release (see README "Releasing").
-image: provdev/appdev:build-ops-pipe-BUILD_NUMBER
+image: provdev/appdev:build-ops-pipe-1
 category: Deployment
 description: Build once, check, promote by source-tree hash, and update gitops-central-repo for Providus apps.
 maintainer:
