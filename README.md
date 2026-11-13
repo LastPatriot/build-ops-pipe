@@ -5,6 +5,11 @@ and update `gitops-central-repo`** so Argo CD deploys it.
 
 Image: `provdev/platform:build-ops-pipe-<n>` (public on Docker Hub, so pipes need no `docker login`)
 
+Current release: **`1.0.2`** → `provdev/platform:build-ops-pipe-11`
+
+App repos don't call this pipe directly: they import the shared pipelines from
+[pipeline-templates](https://bitbucket.org/nndukwe/pipeline-templates), which pins this pipe's release tag.
+
 ## Usage
 
 ```yaml
@@ -14,7 +19,7 @@ Image: `provdev/platform:build-ops-pipe-<n>` (public on Docker Hub, so pipes nee
     services:
       - docker
     script:
-      - pipe: docker://provdev/platform:build-ops-pipe-<n>
+      - pipe: nndukwe/build-ops-pipe:1.0.2
         variables:
           ACTION: build-and-push
           APP_NAME: customer-360-api
@@ -22,8 +27,8 @@ Image: `provdev/platform:build-ops-pipe-<n>` (public on Docker Hub, so pipes nee
           DOCKER_PASSWORD: $DOCKER_PASSWORD
 ```
 
-Once a release tag exists in this repo, `pipe: <workspace>/build-ops-pipe:<git tag>` also works. Bitbucket then
-reads the image from `pipe.yml` at that tag.
+`pipe: nndukwe/build-ops-pipe:<git tag>` makes Bitbucket read the image from `pipe.yml` at that tag.
+`pipe: docker://provdev/platform:build-ops-pipe-<n>` uses an image directly, e.g. to try a build before releasing it.
 
 ## Actions and variables
 
@@ -80,7 +85,9 @@ Running a docker-using action locally needs a Linux Docker CLI and the socket mo
 ## Releasing
 
 1. Merge into `main`. The pipeline lints and pushes `provdev/platform:build-ops-pipe-<build#>`.
-2. Set `image:` in `pipe.yml` to that tag, commit, and tag the commit (e.g. `1.0.0`).
-   This push doesn't build: lint and build only run when `src/**`, `Cargo.*`, `Dockerfile` or
-   `.dockerignore` change.
-3. Point app pipelines at the new image (`docker://…-<build#>` or `<workspace>/build-ops-pipe:1.0.0`).
+2. Set `image:` in `pipe.yml` to that tag, commit, and tag the commit with the next version (e.g. `1.0.3`).
+   Update "Current release" at the top of this README in the same commit.
+   This push doesn't build: lint and build only run when `src/**`, `Cargo.*`, `Dockerfile`,
+   `.dockerignore` or `bitbucket-pipelines.yml` change.
+3. In pipeline-templates, set `pipe-version` in `deploy.yml` to the new tag and release that repo
+   (see its README). Apps pick it up when their import moves to the new pipeline-templates tag.
