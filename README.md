@@ -3,7 +3,7 @@
 A Bitbucket Pipe for the team's standard flow: **build once on `test`, promote the same image to prod,
 and update `gitops-central-repo`** so Argo CD deploys it.
 
-Image: `provdev/appdev:build-ops-pipe-<n>`
+Image: `provdev/platform:build-ops-pipe-<n>` (public on Docker Hub, so pipes need no `docker login`)
 
 ## Usage
 
@@ -14,7 +14,7 @@ Image: `provdev/appdev:build-ops-pipe-<n>`
     services:
       - docker
     script:
-      - pipe: docker://provdev/appdev:build-ops-pipe-<n>
+      - pipe: docker://provdev/platform:build-ops-pipe-<n>
         variables:
           ACTION: build-and-push
           APP_NAME: customer-360-api
@@ -79,7 +79,7 @@ Running a docker-using action locally needs a Linux Docker CLI and the socket mo
 
 ## Releasing
 
-1. Merge into `main`. The pipeline lints and pushes `provdev/appdev:build-ops-pipe-<build#>`.
+1. Merge into `main`. The pipeline lints and pushes `provdev/platform:build-ops-pipe-<build#>`.
 2. Set `image:` in `pipe.yml` to that tag, commit, and tag the commit (e.g. `1.0.0`).
    This push doesn't build: lint and build only run when `src/**`, `Cargo.*`, `Dockerfile` or
    `.dockerignore` change.

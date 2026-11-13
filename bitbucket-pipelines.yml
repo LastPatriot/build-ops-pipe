@@ -3,7 +3,7 @@
 #
 # Flow:
 #   push to any branch      -> Lint (default pipeline)
-#   merge into main         -> Lint, then build and push provdev/appdev:build-ops-pipe-<build#>
+#   merge into main         -> Lint, then build and push provdev/platform:build-ops-pipe-<build#> (public)
 #
 # Requires: repository variables DOCKERHUB_USERNAME and, on the Production deployment,
 #           DOCKER_PASSWORD (secured, Docker Hub token with push access).
@@ -29,12 +29,13 @@ definitions:
           - "Cargo.lock"
           - "Dockerfile"
           - ".dockerignore"
+          - "bitbucket-pipelines.yml"
 
   shared-scripts:
     - &setup-env |
       export APP_NAME="build-ops-pipe"
       export DOCKER_ID="$DOCKERHUB_USERNAME"
-      export IMAGE_REPO="appdev"
+      export IMAGE_REPO="platform" # public: pipes pull it without docker login
       export IMAGE_TAG="${APP_NAME}-${BITBUCKET_BUILD_NUMBER}"
       export FULL_IMAGE_URI="${DOCKER_ID}/${IMAGE_REPO}:${IMAGE_TAG}"
 
@@ -72,7 +73,7 @@ pipelines:
       - step:
           name: Build and Push Docker Image
           deployment: Production # Injects $DOCKER_PASSWORD securely
-          # Skipped when a push only touches pipe.yml, README.md or this file, so bumping
+          # Skipped when a push only touches pipe.yml or README.md, so bumping
           # pipe.yml's image doesn't build a new, identical image.
           condition: *code-changed
           caches:
