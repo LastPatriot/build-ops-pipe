@@ -19,6 +19,17 @@ definitions:
   caches:
     cargo: ~/.cargo/registry
 
+  # Only files that end up in the image (or affect lint) trigger lint and build.
+  conditions:
+    - &code-changed
+      changesets:
+        includePaths:
+          - "src/**"
+          - "Cargo.toml"
+          - "Cargo.lock"
+          - "Dockerfile"
+          - ".dockerignore"
+
   shared-scripts:
     - &setup-env |
       export APP_NAME="build-ops-pipe"
@@ -44,6 +55,7 @@ definitions:
         image: rust:1-bookworm
         caches:
           - cargo
+        condition: *code-changed
         script:
           - rustup component add rustfmt clippy
           - *lint-core
@@ -60,6 +72,9 @@ pipelines:
       - step:
           name: Build and Push Docker Image
           deployment: Production # Injects $DOCKER_PASSWORD securely
+          # Skipped when a push only touches pipe.yml, README.md or this file, so bumping
+          # pipe.yml's image doesn't build a new, identical image.
+          condition: *code-changed
           caches:
             - docker
           services:

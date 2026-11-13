@@ -79,4 +79,6 @@ The image runs as `appuseradm` (UID 1000) and contains `git` and the Docker CLI.
 
 1. Merge into `main`. The pipeline lints and pushes `provdev/appdev:build-ops-pipe-<build#>`.
 2. Set `image:` in `pipe.yml` to that tag, commit, and tag the commit (e.g. `1.0.0`).
+   This push doesn't build: lint and build only run when `src/**`, `Cargo.*`, `Dockerfile` or
+   `.dockerignore` change.
 3. Point app pipelines at the new image (`docker://…-<build#>` or `<workspace>/build-ops-pipe:1.0.0`).
