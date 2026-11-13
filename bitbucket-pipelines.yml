@@ -1,0 +1,69 @@
+# This file lives in the build-ops-pipe repository (the pipe itself, not an app).
+# It is not deployed to Kubernetes: no GitOps update, no test -> prod promotion.
+#
+# Flow:
+#   push to any branch      -> Lint (default pipeline)
+#   merge into main         -> Lint, then build and push provdev/appdev:build-ops-pipe-<build#>
+#
+# Requires: repository variables DOCKERHUB_USERNAME and, on the Production deployment,
+#           DOCKER_PASSWORD (secured, Docker Hub token with push access).
+# Release: after a main build, set `image:` in pipe.yml to the new tag (see README "Releasing").
+
+image: atlassian/default-image:4
+
+definitions:
+  services:
+    docker:
+      memory: 2048
+
+  caches:
+    cargo: ~/.cargo/registry
+
+  shared-scripts:
+    - &setup-env |
+      export APP_NAME="build-ops-pipe"
+      export DOCKER_ID="$DOCKERHUB_USERNAME"
+      export IMAGE_REPO="appdev"
+      export IMAGE_TAG="${APP_NAME}-${BITBUCKET_BUILD_NUMBER}"
+      export FULL_IMAGE_URI="${DOCKER_ID}/${IMAGE_REPO}:${IMAGE_TAG}"
+
+    - &lint-core |
+      cargo fmt --all --check
+      cargo clippy --all-targets -- -W clippy::all     # warnings only on day one
+      # Tighten later: cargo clippy --all-targets -- -D warnings
+
+    - &docker-build-core |
+      echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_ID}" --password-stdin
+      docker build -t ${FULL_IMAGE_URI} .
+      docker push ${FULL_IMAGE_URI}
+      echo "Pushed ${FULL_IMAGE_URI}. To release it, set image: in pipe.yml to this tag."
+
+  steps:
+    - step: &lint-step
+        name: Lint and type-check
+        image: rust:1-bookworm
+        caches:
+          - cargo
+        script:
+          - rustup component add rustfmt clippy
+          - *lint-core
+
+
+# --- EXECUTION BLOCK ---
+pipelines:
+  default:
+    - step: *lint-step
+
+  branches:
+    main:
+      - step: *lint-step
+      - step:
+          name: Build and Push Docker Image
+          deployment: Production # Injects $DOCKER_PASSWORD securely
+          caches:
+            - docker
+          services:
+            - docker
+          script:
+            - *setup-env
+            - *docker-build-core

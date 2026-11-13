@@ -1,0 +1,10 @@
+target
+.git
+.idea
+.env*
+docs
+Dockerfile
+.dockerignore
+README.md
+pipe.yml
+bitbucket-pipelines.yml
