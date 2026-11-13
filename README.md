@@ -73,7 +73,9 @@ docker build -t build-ops-pipe:local .
 docker run --rm -e ACTION=check-image -e APP_NAME=demo build-ops-pipe:local   # prints what's missing
 ```
 
-The image runs as `appuseradm` (UID 1000) and contains `git` and the Docker CLI.
+The image is Alpine-based, runs as `appuseradm` (UID 1000) and contains `git` but not the Docker CLI.
+Bitbucket mounts its own CLI into pipe containers, so the calling step needs `services: docker`.
+Running a docker-using action locally needs a Linux Docker CLI and the socket mounted in.
 
 ## Releasing
 
